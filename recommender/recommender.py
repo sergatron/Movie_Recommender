@@ -12,13 +12,13 @@ class Recommender():
     Content Based Recommender.
     '''
 
-    def __init__(self):
-        '''
-        I didn't have any required attributes needed when creating my class.
-        '''
+    def __init__(self, latent_features=12, learning_rate=0.0001, iters=100):
+        self.latent_features = latent_features
+        self.learning_rate = learning_rate
+        self.iters = iters
 
 
-    def fit(self, reviews_pth, movies_pth, latent_features=12, learning_rate=0.0001, iters=100):
+    def fit(self, reviews_pth, movies_pth):
         '''
         This function performs matrix factorization using a basic form of FunkSVD with no regularization
 
@@ -53,11 +53,6 @@ class Recommender():
         usr_itm = self.reviews[['user_id', 'movie_id', 'rating', 'timestamp']]
         self.user_item_df = usr_itm.groupby(['user_id','movie_id'])['rating'].max().unstack()
         self.user_item_mat = np.array(self.user_item_df)
-
-        # Store more inputs
-        self.latent_features = latent_features
-        self.learning_rate = learning_rate
-        self.iters = iters
 
         # Set up useful values to be used through the rest of the function
         self.n_users = self.user_item_mat.shape[0]
@@ -192,11 +187,11 @@ if __name__ == '__main__':
     import recommender as r
 
     #instantiate recommender
-    rec = r.Recommender()
+    rec = r.Recommender(learning_rate=.01, iters=10)
 
     start_time = time.perf_counter()
     # fit recommender
-    rec.fit(reviews_pth='data/train_data.csv', movies_pth= 'data/movies_clean.csv', learning_rate=.01, iters=10)
+    rec.fit(reviews_pth='data/train_data.csv', movies_pth= 'data/movies_clean.csv')
     print("Fit time:", time.perf_counter() - start_time)
 
     # predict
