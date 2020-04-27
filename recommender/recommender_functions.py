@@ -1,31 +1,37 @@
 import numpy as np
 import pandas as pd
-from joblib import dump
 
 
-def load_data():
-    # load moview and reviews data
-    reviews = pd.read_csv('data/reviews_clean.csv')
-    movies = pd.read_csv('data/movies_clean.csv')
+# def load_data():
+#     # load moview and reviews data
+#     reviews = pd.read_csv('data/reviews_clean.csv')
+#     movies = pd.read_csv('data/movies_clean.csv')
 
-    return movies, reviews
-
-
-def dump_data(data, filepath):
-    try:
-        dump(data, filepath)
-    except Exception as e:
-        print(e)
-        print('Failed to pickle data')
+#     return movies, reviews
 
 
-def create_user_item_matrix(movies, reviews):
-    # Create user-item matrix
-    usr_itm = reviews[['user_id', 'movie_id', 'rating', 'timestamp']]
+# def dump_data(data, filepath):
+#     try:
+#         dump(data, filepath)
+#     except Exception as e:
+#         print(e)
+#         print('Failed to pickle data')
+
+
+def create_user_item_matrix(reviews_path="data/reviews_clean.csv"):
+
+    reviews = pd.read_csv(reviews_path)
+    train_reviews = reviews[:500_000]
+    del reviews
+
+    usr_itm = train_reviews[['user_id', 'movie_id', 'rating']].astype(np.uint32)
     user_item_df = usr_itm.groupby(['user_id','movie_id'])['rating'].max().unstack()
-    user_item_mat= np.array(user_item_df)
 
-    dump_data(user_item_mat, 'user_item_mat.pkl')
+    return user_item_df.values
+
+
+# def load_user_item(user_item_path='data/user_item_mat.pkl'):
+#     return load(user_item_path)
 
 
 

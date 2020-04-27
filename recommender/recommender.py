@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 import recommender_functions as rf
 import time
+import gc
 
+
+#%%
 class Recommender():
     '''
     This Recommender uses FunkSVD to make predictions of exact ratings. And
@@ -13,12 +16,20 @@ class Recommender():
     '''
 
     def __init__(self, latent_features=12, learning_rate=0.0001, iters=100):
+        """
+        Initializer
+
+        Returns
+        -------
+        None.
+
+        """
         self.latent_features = latent_features
         self.learning_rate = learning_rate
         self.iters = iters
 
 
-    def fit(self, reviews_pth, movies_pth):
+    def fit(self, movies_pth, reviews_pth):
         '''
         This function performs matrix factorization using a basic form of FunkSVD with no regularization
 
@@ -45,21 +56,27 @@ class Recommender():
             learning_rate : (float) the learning rate
             iters : (int) the number of iterations
         '''
+        from numpy import dot, subtract, add, multiply, square
+
         # Store inputs as attributes
-        self.reviews = pd.read_csv(reviews_pth)
+        self.reviews = pd.read_csv(reviews_pth)[:60000]
         self.movies = pd.read_csv(movies_pth)
 
         # Create user-item matrix
-        usr_itm = self.reviews[['user_id', 'movie_id', 'rating', 'timestamp']]
+        usr_itm = self.reviews[['user_id', 'movie_id', 'rating']]
         self.user_item_df = usr_itm.groupby(['user_id','movie_id'])['rating'].max().unstack()
-        self.user_item_mat = np.array(self.user_item_df)
+        self.user_item_mat = self.user_item_df.values
+        del usr_itm
+        gc.collect()
 
         # Set up useful values to be used through the rest of the function
         self.n_users = self.user_item_mat.shape[0]
         self.n_movies = self.user_item_mat.shape[1]
         self.num_ratings = np.count_nonzero(~np.isnan(self.user_item_mat))
-        self.user_ids_series = np.array(self.user_item_df.index)
-        self.movie_ids_series = np.array(self.user_item_df.columns)
+
+        # TODO: get index of user ids
+        # self.user_ids_series = np.array(self.user_item_df.index)
+        # self.movie_ids_series = np.array(self.user_item_df.columns)
 
         # initialize the user and movie matrices with random values
         user_mat = np.random.rand(self.n_users, self.latent_features)
@@ -69,9 +86,10 @@ class Recommender():
         sse_accum = 0
 
         # keep track of iteration and MSE
-        print("Optimizaiton Statistics")
+        print("Optimization Statistics")
         print("Iterations | Mean Squared Error ")
 
+        start_time = time.perf_counter()
         # for each iteration
         for iteration in range(self.iters):
 
@@ -87,18 +105,24 @@ class Recommender():
                     if self.user_item_mat[i, j] > 0:
 
                         # compute the error as the actual minus the dot product of the user and movie latent features
-                        diff = self.user_item_mat[i, j] - np.dot(user_mat[i, :], movie_mat[:, j])
+                        actual_rating = self.user_item_mat[i, j]
+                        dot_prod = dot(user_mat[i, :], movie_mat[:, j])
+                        diff =  subtract(actual_rating, dot_prod)
+                        del actual_rating, dot_prod
 
                         # Keep track of the sum of squared errors for the matrix
-                        sse_accum += np.square(diff)
+                        sse_accum += square(diff)
 
                         # update the values in each matrix in the direction of the gradient
                         for k in range(self.latent_features):
-                            user_mat[i, k] += self.learning_rate * (2*diff*movie_mat[k, j])
-                            movie_mat[k, j] += self.learning_rate * (2*diff*user_mat[i, k])
+                            user_mat[i, k] += self.learning_rate * (2 * diff * movie_mat[k, j])
+
+                            movie_mat[k, j] += self.learning_rate * (2 * diff * user_mat[i, k])
 
             # print results
             print("%d \t\t %f" % (iteration+1, sse_accum / self.num_ratings))
+
+        print('Update time:', time.perf_counter() - start_time)
 
         # SVD based fit
         # Keep user_mat and movie_mat for safe keeping
@@ -184,18 +208,32 @@ class Recommender():
         return rec_ids, rec_names
 
 if __name__ == '__main__':
-    import recommender as r
+    # import recommender as rec
+
+    # split data into train and test subsets
+
+
 
     #instantiate recommender
-    rec = r.Recommender(learning_rate=.01, iters=10)
+    recommender = Recommender(learning_rate=0.01, iters=10)
 
+
+    # fit recommender, and time the fit method
     start_time = time.perf_counter()
-    # fit recommender
-    rec.fit(reviews_pth='data/train_data.csv', movies_pth= 'data/movies_clean.csv')
-    print("Fit time:", time.perf_counter() - start_time)
+    recommender.fit(movies_pth= 'data/movies_clean.csv',
+                    reviews_pth= 'data/reviews_clean.csv',
+                    )
+
+    print("Total fit time:", time.perf_counter() - start_time)
 
     # predict
     # rec.predict_rating(user_id=8, movie_id=2844)
+
+
+    # evalute on test subset
+
+
+
 
     # # make recommendations
     # print(rec.make_recommendations(8,'user')) # user in the dataset
