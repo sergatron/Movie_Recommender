@@ -1,6 +1,6 @@
 # Movie Recommendations (Work in Progress...)
-
-There are numerous ways of making recommendations to users or friends. Simple recommendations can be made using most popular movies at the time of request, or by asking a few simple questions about favorite genres and/or actors. There is no wrong way to do it but there some important things to keep in mind. 
+## Introduction
+There are numerous ways of making recommendations to users, customers, or friends. Simple recommendations can be made using most popular movies at the time of request, or by asking a few simple questions about favorite genres and/or actors. There is no wrong way to do it but there some important things to keep in mind. 
 
 ### Business Goals
 We can say that there are four main criteria needed to make successful recommendations:
@@ -13,6 +13,7 @@ Relevance may be the obvious one to focus on to begin with. It's a good way to e
 
 This recommender utilizes multiple methods to provide movie recommendations to users based on **Ranking**, **Content**, **Collaborative Filtering**, and **Matrix Factorization (FunkSVD)** with the aim to hit all four business goals and maximize retention of customers. 
 
+# Implementation
 
 # Data
 The data is obtained from [MovieTweetings](https://github.com/sidooms/MovieTweetings). Two files are downloaded, `movies`, and `reviews`. Some data processing is required to extract movie titles, year, centuries, and genres from the `movies` dataset. As for the `reviews` dataset, from the `timestamp` variable, things like date, year, month, day, and day of week are extracted to be used additional features.
